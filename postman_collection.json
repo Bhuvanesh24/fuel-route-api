@@ -1,0 +1,101 @@
+{
+  "info": {
+    "name": "Fuel-Optimal Route API",
+    "description": "Route between two US locations with cost-optimal fuel stops (500-mile tank, 10 MPG).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" }
+  ],
+  "item": [
+    {
+      "name": "Route: Los Angeles -> New York",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start=Los Angeles, CA&finish=New York, NY",
+          "host": ["{{base_url}}"],
+          "path": ["api", "route", ""],
+          "query": [
+            { "key": "start", "value": "Los Angeles, CA" },
+            { "key": "finish", "value": "New York, NY" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Route: short trip, no stops needed (Dallas -> Austin)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start=Dallas, TX&finish=Austin, TX",
+          "host": ["{{base_url}}"],
+          "path": ["api", "route", ""],
+          "query": [
+            { "key": "start", "value": "Dallas, TX" },
+            { "key": "finish", "value": "Austin, TX" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Route by coordinates (1 external call): Dallas -> Chicago",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start_lat=32.78&start_lon=-96.80&finish_lat=41.88&finish_lon=-87.63",
+          "host": ["{{base_url}}"],
+          "path": ["api", "route", ""],
+          "query": [
+            { "key": "start_lat", "value": "32.78" },
+            { "key": "start_lon", "value": "-96.80" },
+            { "key": "finish_lat", "value": "41.88" },
+            { "key": "finish_lon", "value": "-87.63" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Error: missing finish parameter (400)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start=Dallas, TX",
+          "host": ["{{base_url}}"],
+          "path": ["api", "route", ""],
+          "query": [{ "key": "start", "value": "Dallas, TX" }]
+        }
+      }
+    },
+    {
+      "name": "Error: unknown location (400)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/api/route/?start=xyzzyqwerty&finish=Austin, TX",
+          "host": ["{{base_url}}"],
+          "path": ["api", "route", ""],
+          "query": [
+            { "key": "start", "value": "xyzzyqwerty" },
+            { "key": "finish", "value": "Austin, TX" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Interactive map (open in browser)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/map/?start=Los Angeles, CA&finish=New York, NY",
+          "host": ["{{base_url}}"],
+          "path": ["map", ""],
+          "query": [
+            { "key": "start", "value": "Los Angeles, CA" },
+            { "key": "finish", "value": "New York, NY" }
+          ]
+        }
+      }
+    }
+  ]
+}
