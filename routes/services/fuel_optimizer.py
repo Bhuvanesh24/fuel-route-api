@@ -72,10 +72,16 @@ def plan_fuel_stops(candidates, total_miles, tank_range=500.0, mpg=10.0):
             next_i = None
             need = total_miles - position
         elif reachable:
-            # Everything in reach costs more: leave with a full tank and stop
-            # at the cheapest of them.
-            next_i = min(reachable, key=lambda j: stations[j].price)
-            need = tank_range
+            # Nothing ahead is cheaper: stop next at the cheapest reachable
+            # station (ties: the farthest). If it costs the same as here, defer
+            # the fill to it - identical cost, avoids same-price stops minutes
+            # apart; otherwise fill up here.
+            next_i = min(reachable,
+                         key=lambda j: (stations[j].price, -stations[j].route_position_miles))
+            if stations[next_i].price == here.price:
+                need = stations[next_i].route_position_miles - position
+            else:
+                need = tank_range
         else:
             raise CoverageGapError(position)
 

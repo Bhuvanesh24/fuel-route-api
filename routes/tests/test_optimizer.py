@@ -85,6 +85,17 @@ def test_cheap_station_is_not_a_stop_when_tank_suffices():
     assert all(s.gallons > 0 for s in plan.stops)
 
 
+def test_equal_price_stations_dont_create_redundant_stops():
+    # Two same-price stations 10 miles apart: filling at the first and topping
+    # up at the second costs the same as filling once at the second, so only
+    # one of them should appear as a stop.
+    plan = plan_fuel_stops(
+        [cand(400, 3.0), cand(410, 3.0), cand(800, 3.5)], total_miles=1300.0)
+    positions = [s.candidate.route_position_miles for s in plan.stops]
+    assert positions.count(400) + positions.count(410) == 1
+    assert plan.total_gallons == pytest.approx(80.0)  # invariant still holds
+
+
 def test_total_gallons_invariant():
     # Optimal plans never strand fuel: purchases cover exactly the miles beyond
     # the starting tank.

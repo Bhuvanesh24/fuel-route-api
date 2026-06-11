@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fuel Route: {{ plan.start.query }} → {{ plan.finish.query }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; font-family: system-ui, sans-serif; }
+    #map { height: 100%; }
+    .banner {
+      position: absolute; top: 12px; right: 12px; z-index: 1000;
+      background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.35);
+      padding: 12px 16px; max-width: 320px; font-size: 14px;
+    }
+    .banner h1 { font-size: 15px; margin: 0 0 6px; }
+    .banner .cost { font-size: 22px; font-weight: 700; color: #1a7f37; }
+    .banner table { border-collapse: collapse; margin-top: 6px; }
+    .banner td { padding: 1px 8px 1px 0; color: #444; }
+    .legend { margin-top: 8px; font-size: 12px; color: #666; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="banner">
+    <h1>{{ plan.start.query }} → {{ plan.finish.query }}</h1>
+    <div class="cost">${{ plan.fuel_plan.total_fuel_cost }} fuel</div>
+    <table>
+      <tr><td>Distance</td><td>{{ plan.route.distance_miles }} mi</td></tr>
+      <tr><td>Drive time</td><td>{{ plan.route.duration_hours }} h</td></tr>
+      <tr><td>Fuel stops</td><td>{{ plan.fuel_plan.stops|length }}</td></tr>
+      <tr><td>Gallons</td><td>{{ plan.fuel_plan.total_gallons_purchased }}</td></tr>
+    </table>
+    <div class="legend">
+      <span class="dot" style="background:#1a7f37"></span>cheaper
+      <span class="dot" style="background:#d73a49; margin-left:8px"></span>pricier stop
+    </div>
+  </div>
+
+  {{ route_coords|json_script:"route-coords" }}
+  {{ plan|json_script:"plan-data" }}
+  <script>
+    const routeCoords = JSON.parse(document.getElementById('route-coords').textContent);
+    const plan = JSON.parse(document.getElementById('plan-data').textContent);
+
+    const map = L.map('map');
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    const line = L.polyline(routeCoords, { color: '#2160d3', weight: 4, opacity: 0.85 }).addTo(map);
+    map.fitBounds(line.getBounds(), { padding: [30, 30] });
+
+    L.marker([plan.start.lat, plan.start.lon]).addTo(map)
+      .bindPopup(`<b>Start</b><br>${plan.start.display_name}`);
+    L.marker([plan.finish.lat, plan.finish.lon]).addTo(map)
+      .bindPopup(`<b>Finish</b><br>${plan.finish.display_name}`);
+
+    const stops = plan.fuel_plan.stops;
+    const prices = stops.map(s => s.price_per_gallon);
+    const [lo, hi] = [Math.min(...prices), Math.max(...prices)];
+    const color = p => {
+      const t = hi > lo ? (p - lo) / (hi - lo) : 0;       // 0 = cheapest, 1 = priciest
+      return `rgb(${Math.round(26 + t * 189)}, ${Math.round(127 - t * 69)}, ${Math.round(55 + t * 18)})`;
+    };
+    stops.forEach((s, i) => {
+      L.circleMarker([s.lat, s.lon], {
+        radius: 9, color: '#fff', weight: 2, fillColor: color(s.price_per_gallon), fillOpacity: 1,
+      }).addTo(map).bindPopup(
+        `<b>Stop ${i + 1}: ${s.name}</b><br>${s.address}<br>${s.city}, ${s.state}<br>` +
+        `$${s.price_per_gallon.toFixed(3)}/gal &middot; ${s.gallons_purchased} gal &middot; ` +
+        `<b>$${s.cost.toFixed(2)}</b><br>` +
+        `mile ${s.route_position_miles} of route`
+      );
+    });
+  </script>
+</body>
+</html>
